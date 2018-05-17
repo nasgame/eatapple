@@ -399,11 +399,11 @@
 
     function gameOver() {
         _gameOver = true;
-        showGameScoreLayer();
+
         clearInterval(_gameTime);
         setTimeout(function () {
-            // GameLayerBG.className = '';
-
+            GameLayerBG.className = '';
+            showGameScoreLayer();
         }, 1500);
     }
 
