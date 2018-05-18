@@ -2,8 +2,11 @@
 <head>
     <title>我是你的小呀小苹果</title>
     <meta charset="utf-8"/>
+
     <meta name="viewport"
           content="initial-scale=1, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, width=device-width,target-densitydpi=device-dpi"/>
+    <link rel="stylesheet" href="src/css/layui.css">
+
     <script type="text/javascript" src="jquery.min.js"></script>
     <script type="text/javascript">
         var i = new Date().getTime() % 5;
@@ -264,7 +267,16 @@
         }
     </style>
     <script type="text/javascript" src="http://tajs.qq.com/stats?sId=35420161" charset="UTF-8"></script>
+
 </head>
+<div id="msgcontent" style="display: none">
+    <div class="layui-form-item">
+        <div class="layui-input-block" style="padding: 10px">
+            <input type="text"
+                    placeholder="给自己起一个响亮的名字吧" class="layui-input">
+        </div>
+    </div>
+</div>
 <body onLoad="init()">
 
 <script type="text/javascript">
@@ -406,7 +418,6 @@
             showGameScoreLayer();
         }, 1500);
     }
-
     function gameTime() {
         _gameTimeNum--;
         if (_gameTimeNum <= 0) {
@@ -523,10 +534,7 @@
         return html;
     }
 
-    function closeWelcomeLayer() {
-        var l = document.getElementById('welcome');
-        l.style.display = 'none';
-    }
+
 
     function showWelcomeLayer() {
         var l = document.getElementById('welcome');
@@ -538,14 +546,38 @@
         var c = document.getElementById(_gameBBList[_gameBBListIndex - 1].id).className.match(_ttreg)[1];
         l.className = l.className.replace(/bgc\d/, 'bgc' + c);
         document.getElementById('GameScoreLayer-text').innerHTML = shareText(_gameScore);
-        var bast = cookie('bast-score');
-        if (!bast || _gameScore > bast) {
-            bast = _gameScore;
-            cookie('bast-score', bast, 100);
+
+        var pm = getCurrPaiming(_gameScore)
+        if(pm != 0){
+            document.getElementById('GameScoreLayer-bast').innerHTML = '当前得分世界排名：&nbsp;&nbsp;' +pm +'&nbsp;&nbsp;';
+        }else{
+            document.getElementById('GameScoreLayer-bast').innerHTML = '当前得分世界排名：&nbsp;未在排行榜&nbsp;';
+
         }
-        document.getElementById('GameScoreLayer-bast').innerHTML = '最佳&nbsp;&nbsp;' + bast;
         l.style.display = 'block';
-        window.shareData.tTitle = '我吃掉了' + _gameScore + '个小苹果，不服来挑战！！！'
+    }
+    //获取世界排名
+    function  getCurrPaiming(currScore) {
+        if(dataList){
+            var cpyList =dataList.concat()
+            cpyList.push({name:"",score:currScore});
+            cpyList.sort(compare('score'))
+            paiming =-1;
+            for(var i = 0;i<cpyList.length;i++){//看看自己的排名
+                if(cpyList[i].score == currScore){
+                    paiming =i+1;
+                    break;
+                }
+            }
+            if(paiming!=-1) {//有排名
+                return paiming
+            }else{
+                return 0;
+            }
+
+        }else{
+            return 0;
+        }
     }
 
     function hideGameScoreLayer() {
@@ -553,10 +585,6 @@
         l.style.display = 'none';
     }
 
-    function replayBtn() {
-        gameRestart();
-        hideGameScoreLayer();
-    }
 
     function backBtn() {
         gameRestart();
@@ -608,12 +636,7 @@
 
     document.write(createGameLayer());
 
-    function share() {
-        document.getElementById('share-wx').style.display = 'block';
-        document.getElementById('share-wx').onclick = function () {
-            this.style.display = 'none';
-        };
-    }
+
 
 </script>
 
@@ -624,7 +647,7 @@
         <div id="GameScoreLayer-bast">最佳</div>
         <br/>
         <div id="GameScoreLayer-btn" >
-            <div class="btn BOX-S" onClick="share()">提交分数到排行榜</div>&nbsp;
+            <div class="btn BOX-S" onClick="submit()">提交分数到排行榜</div>&nbsp;
             <div class="btn BOX-S" onClick="replayBtn()">重来</div>&nbsp;
         </div>
         <br/>
@@ -643,10 +666,8 @@
             <div id="ready-btn" class="btn loading"
                  style="display:inline-block; margin:0 auto; width:8em; height:1.7em; line-height:1.7em; font-size:2.2em; color:#fff;"></div>
             <br/><br/></br></br>
-            <div style="font-size:1.5em; color:#fff; line-height:1em;">第一名:张三：300个</div>
-            <div style="font-size:1.5em; color:#fff; line-height:1em;">第二名:张三：200个</div>
-            <div style="font-size:1.5em; color:#fff; line-height:1em;">第三名:张三：100个</div>
-
+            <div id="guanjun" style="font-size:1em; color:#fff; line-height:1em;"></div>
+            <div id="paimingme" style="font-size:1em;margin-top: 20px; color:#fff; line-height:1em;"></div>
         </div>
     </div>
 </div>
@@ -659,11 +680,202 @@
 <div id="share-wx"><p style="text-align: right; padding-left: 10px;"><img src="2000.png" id="share-wx-img"
                                                                           style="max-width: 280px; padding-right: 25px;">
 </p></div>
+<script src="nebPay.js"></script>
+<script src=nebulas.js></script>
+<script src="src/layui.js"></script>
 <script type="text/javascript">
+    function  alertInputName() {
+        layui.use('layer', function() {
+            var $ = layui.jquery, layer = layui.layer;
+            layer.prompt({
+                formType: 0,
+                value: '',
+                title: '少侠，留个名字让万人膜拜吧！',
+                area: ['250px', '50px'] //自定义文本域宽高
+            }, function (value, index) {
+                layer.close(index);
+                localName = value;
+                callChromeplugins();
+            });
+        })
+    }
     if (isDesktop)
         document.write('</div>');
+    var toAddr = 'n1ot9f916nsk7fC7MXywni9WZdk83YaaTRw'
+    var nebulas = require("nebulas"),
+        Account = nebulas.Account,
+        neb = new nebulas.Neb();
+    neb.setRequest(new nebulas.HttpRequest("https://mainnet.nebulas.io"));
+    var localAccount;
+    var localName;
+    var from;
+    window.postMessage({
+        "target": "contentscript",
+        "data": {},
+        "method": "getAccount",
+    }, "*");
+
+    window.addEventListener('message', function (e) {
+        if (e.data && e.data.data) {
+            if (e.data.data.account) {//这就是当前钱包中的地址
+                localAccount = e.data.data.account;
+                from = localAccount;
+            }else{
+                from =Account.NewAccount().getAddressString();
+            }
+            getData();
+        }
+    });
+
+    function getData() {
+        var value = "0";
+        var nonce = "0"
+        var gas_price = "1000000"
+        var gas_limit = "2000000"
+        var callFunction = "get";
+        var callArgs = ""
+        var contract = {
+            "function": callFunction,
+            "args": callArgs
+        }
+        neb.api.call(from,toAddr,value,nonce,gas_price,gas_limit,contract).then(function (resp) {
+            onresult(resp)
+        }).catch(function (err) {
+            //cbSearch(err)
+            console.log("error:" + err.message)
+        })
+        if(localAccount){
+            var contract = {
+                "function": "getCount",
+                "args": callArgs
+            }
+            neb.api.call(from,toAddr,value,nonce,gas_price,gas_limit,contract).then(function (resp) {
+                onresultGetCount(resp)
+            }).catch(function (err) {
+                console.log("error:" + err.message)
+            })
+        }
+
+    }
+    function onresultGetCount(resp) {
+        count = JSON.parse(resp.result);
+        if(count){
+          //  alert(JSON.stringify(dataList[i]));
+            // $('#paimingme').html
+        }
+    }
+    var dataList;
+    var paiming =-1;
+    function onresult(resp) {
+        dataList = JSON.parse(resp.result);
+        if (dataList) {
+            //解析第一名
+            //查看当前帐号
+            dataList.sort(compare('score'))
+            $('#guanjun').html("冠军选手:&nbsp;&nbsp;"+dataList[0].name+"&nbsp; 得分:&nbsp;"+dataList[0].score);
+            paiming =-1;
+            if(localAccount){
+                for(var i = 0;i<dataList.length;i++){//看看自己的排名
+                    if(dataList[i].uid == localAccount){
+                        paiming =i+1;
+                        localName = dataList[i].name;
+                        break;
+                    }
+                }
+                if(paiming!=-1) {//有排名
+                    $('#paimingme').html("我的排名:&nbsp;&nbsp;"+paiming)
+                }else{
+                    $('#paimingme').html("我的排名:&nbsp;&nbsp;未上传")
+                }
+            }else{
+                //不显示
+            }
+        }else{
+            $('#guanjun').html("冠军选手:无");
+        }
+    }
+
+    function compare(property){
+        return function(a,b){
+            var value1 = a[property];
+            var value2 = b[property];
+            return value2 - value1;
+        }
+    }
+
+    var SubData={};
+    function submit() {
+        //用户昵称 分数
+        if(localName){
+            callChromeplugins()
+        }else{
+            alertInputName()
+        }
+    }
+    function callChromeplugins() {//调用插件上传数据到链
+        SubData.name = localName;
+        SubData.score = _gameScore;
+        var arrs = [];
+        arrs.push(SubData.name);
+        arrs.push(SubData.score);
+
+        var NebPay = require("nebpay");     //https://github.com/nebulasio/nebPay
+        var nebPay = new NebPay();
+        var value = "0";
+        var callFunction = "set"
+        var callArgs = JSON.stringify(arrs)
+
+        var serialNumber = nebPay.call(toAddr, value, callFunction, callArgs, {    //使用nebpay的call接口去调用合约,
+            listener: addSucc        //设置listener, 处理交易返回信息
+        });
+    }
+    function addSucc(resp) {
+        alert("分数提交成功");
+        getData();
+    }
+    var startStatus;
+    var count=0;
+    function closeWelcomeLayer() {
+        startStatus =1;
+        start();
+        // var l = document.getElementById('welcome');
+        // l.style.display = 'none';
+    }
+    //重新开始
+    function replayBtn() {
+
+        startStatus=2;
+        if(count%3==0){
+            start();
+        }else{
+            count++
+            gameRestart();
+            hideGameScoreLayer();
+        }
+
+
+    }
+    function start() {
+        var NebPay = require("nebpay");     //https://github.com/nebulasio/nebPay
+        var nebPay = new NebPay();
+        var value = "0";
+        var callFunction = "start"
+        var callArgs = "";
+        var serialNumber = nebPay.call(toAddr, value, callFunction, callArgs, {    //使用nebpay的call接口去调用合约,
+            listener: startSucc        //设置listener, 处理交易返回信息
+        });
+    }
+    function startSucc(resp) {
+        count++
+        if(startStatus==1){
+            var l = document.getElementById('welcome');
+            l.style.display = 'none';
+        }else{
+            gameRestart();
+            hideGameScoreLayer();
+        }
+    }
 </script>
-
-
 </body>
+
 </html>
