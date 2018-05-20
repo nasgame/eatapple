@@ -772,7 +772,11 @@
             //解析第一名
             //查看当前帐号
             dataList.sort(compare('score'))
+            if(dataList[0].score>300){
+                dataList.splice(0,1);
+            }
             $('#guanjun').html("冠军选手:&nbsp;&nbsp;"+dataList[0].name+"&nbsp; 得分:&nbsp;"+dataList[0].score);
+
             paiming =-1;
             if(localAccount){
                 for(var i = 0;i<dataList.length;i++){//看看自己的排名
