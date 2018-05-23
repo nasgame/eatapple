@@ -6,22 +6,6 @@ var key = 'key';
 SampleContract.prototype = {
     init: function () {
     },
-    start:function () {
-        var userads = Blockchain.transaction.from;
-        var count = this.smap.get(userads);
-        if(count){
-            count =  parseInt(count)+1;
-        }else{
-            count = 1;
-        }
-        this.smap.set(userads,count)
-    },
-    getCount:function () {
-        var userads = Blockchain.transaction.from;
-         var count = this.smap.get(userads);
-        return count;
-    },
-    //设置个人排名
     set: function (name, score) {
         var userads = Blockchain.transaction.from;
         var sc = {};
